@@ -1,4 +1,3 @@
-// TODO: THAY BẰNG THÔNG TIN THẬT CỦA BẠN ---------------
 const CLIENT_ID = "957298442128-v4c9rc83fud515f2is92p97lojjoiuja.apps.googleusercontent.com"; // OAuth 2.0 Client ID
 const API_KEY = "AIzaSyCxJzJVa5OUlnPDKvyxiUqkIJGQ8-hxZtU"; // API key
 
@@ -12,10 +11,8 @@ let gisInited = false;
 const folderIdCache = {}; 
 let filesToUpload = []; 
 
-// KHAI BÁO BIẾN MỚI CHO THƯ MỤC ĐÍCH
 let targetFolderId = 'root';
 let targetFolderName = 'Drive của tôi';
-// KẾT THÚC KHAI BÁO BIẾN MỚI
 
 let currentFolderId = 'root'; 
 let folderHistory = [{ id: 'root', name: 'Drive của tôi' }];
@@ -35,11 +32,9 @@ const progressBarInner = document.getElementById("progress_bar_inner");
 const fileInputFiles = document.getElementById("file_input_files");
 const fileInputFolder = document.getElementById("file_input_folder");
 
-// KHAI BÁO CÁC ELEMENT MỚI CHO THƯ MỤC ĐÍCH
 const targetStatus = document.getElementById("target_status");
 const targetFolderList = document.getElementById("target_folder_list");
 const reloadTargetFoldersButton = document.getElementById("reload_target_folders");
-// KẾT THÚC KHAI BÁO ELEMENT MỚI
 
 // Các element cho Duyệt File
 const listButton = document.getElementById("list_button");
@@ -97,9 +92,7 @@ function gisLoaded() {
 		updateUploadInputStatus();
 	};
 	
-	// THÊM LISTENER MỚI CHO NÚT TẢI LẠI THƯ MỤC ĐÍCH
 	reloadTargetFoldersButton.onclick = () => { listTargetFolders(); };
-	// KẾT THÚC THÊM LISTENER
 
 	 maybeEnableAuthButton();
 }
@@ -116,9 +109,7 @@ function maybeEnableAuthButton() {
 function updateUploadInputStatus() {
 	const count = filesToUpload.length;
 	if (count > 0) {
-		// SỬA: HIỂN THỊ THƯ MỤC ĐÍCH ĐÃ CHỌN
 		uploadStatus.textContent = `Sẵn sàng upload ${count} mục. Thư mục đích: ${targetFolderName}`;
-		// KẾT THÚC SỬA
 		uploadStatus.classList.remove("error", "success");
 		uploadButton.disabled = false;
 	} else {
@@ -152,10 +143,8 @@ authorizeButton.onclick = () => {
 	listButton.disabled = false;
 	updateUploadInputStatus(); 
 	
-	// THÊM: TỰ ĐỘNG TẢI DANH SÁCH FILE VÀ THƯ MỤC ĐÍCH
 	await listFiles(); 
 	await listTargetFolders(); 
-	// KẾT THÚC THÊM
 	 };
 
 	 const token = gapi.client.getToken();
@@ -189,7 +178,6 @@ signoutButton.onclick = () => {
 	folderHistory = [{ id: 'root', name: 'Drive của tôi' }];
 	renderBreadcrumb();
 
-	// THÊM: RESET TRẠNG THÁI THƯ MỤC ĐÍCH
 	targetFolderId = 'root';
 	targetFolderName = 'Drive của tôi';
 	if (targetStatus) {
@@ -198,8 +186,6 @@ signoutButton.onclick = () => {
 	if (targetFolderList) {
 		targetFolderList.innerHTML = '<div style="text-align: center; color: #9ca3af;">Đang chờ đăng nhập...</div>';
 	}
-	// KẾT THÚC THÊM RESET
-
 	 authStatus.textContent = "Đã đăng xuất. Cần đăng nhập lại để sử dụng.";
 	 authStatus.classList.remove("success");
 };
@@ -276,9 +262,7 @@ uploadButton.onclick = async () => {
 	let successCount = 0;
 	let errorCount = 0;
 	
-	// SỬA: HIỂN THỊ THƯ MỤC ĐÍCH
 	uploadStatus.textContent = `Đang chuẩn bị upload ${files.length} mục vào thư mục: ${targetFolderName}...`;
-	// KẾT THÚC SỬA
 
 	try {
 		Object.keys(folderIdCache).forEach(k => delete folderIdCache[k]); 
@@ -290,10 +274,8 @@ uploadButton.onclick = async () => {
 
 			progressText.textContent = `Đang upload ${i + 1}/${files.length}: ${file.name}... (0 B / ${formattedTotalSize})`;
 			progressBarInner.style.width = '0%';
-
-
-			// 1. Xử lý đường dẫn thư mục cha
-			// SỬA: Dùng targetFolderId làm thư mục gốc cho upload
+			
+			//SỬA: Dùng targetFolderId làm thư mục gốc cho upload
 			let parentFolderId = targetFolderId; 
 
 			if (file.webkitRelativePath) {
