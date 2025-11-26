@@ -67,6 +67,8 @@
 			flex: 1; 
 			min-width: 250px;
 			margin-bottom: 0;
+			display: flex;
+			flex-direction: column;
 		}
 
 		/* CỘT 3 (Đăng nhập): Giữ nguyên */
@@ -309,12 +311,14 @@
 		 
 		/* CSS cho Danh sách Thư mục Đích */
 		#target_folder_list {
-			max-height: 350px; /* Giới hạn chiều cao */
+			max-height: 400px; /* Giới hạn chiều cao */
 			overflow-y: auto; /* Thêm thanh cuộn */
 			margin-top: 10px;
 			padding: 5px;
 			border: 1px solid #eef1f4;
 			border-radius: 8px;
+			
+			
 		}
 
 		.folder-item {
@@ -957,7 +961,7 @@
 					pageSize: 50, 
 					fields: "files(id,name,mimeType)",
 					orderBy: "name", 
-					q: `mimeType = 'application/vnd.google-apps.folder' and trashed = false`, 
+					q: `mimeType = 'application/vnd.google-apps.folder' and 'root' in parents and trashed = false`,
 				});
 
 				const folders = response.result.files || [];
@@ -998,7 +1002,7 @@
 			
 			div.onclick = () => {
 				// Xóa trạng thái selected cũ
-				document.querySelectorAll('#target_folder_list .folder-item').forEach(item => item.classList.remove('selected'));
+				document.querySelectorAll('#target_folder_list .folder-item').forEach(item => ;
 				
 				// Set trạng thái selected mới
 				div.classList.add('selected');
