@@ -1,7 +1,3 @@
-// ==============================================================================
-// 🎯 THÔNG TIN CẤU HÌNH CẦN THAY ĐỔI
-// ==============================================================================
-// TODO: THAY BẰNG THÔNG TIN THẬT CỦA BẠN (Client ID và API Key từ Google Cloud Console)
 const CLIENT_ID = "957298442128-v4c9rc83fud515f2is92p97lojjoiuja.apps.googleusercontent.com"; 
 const API_KEY = "AIzaSyCxJzJVa5OUlnPDKvyxiUqkIJGQ8-hxZtU"; 
 
