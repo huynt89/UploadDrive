@@ -155,32 +155,42 @@ function handleSignoutClick() {
 // --- CỘT 2: QUẢN LÝ THƯ MỤC ĐÍCH ---
 
 // HÀM QUAY LẠI TỪNG BƯỚC CHO CỘT 2
+// TRONG HÀM navigateTargetHistoryBack
 function navigateTargetHistoryBack() {
     if (targetFolderHistory.length <= 1) return;
     
-    // Lùi 1 bước trong lịch sử
+    // 1. Cắt bớt lịch sử: chỉ giữ lại các mục cho đến thư mục trước đó (previousIndex)
     const previousIndex = targetFolderHistory.length - 2;
-    const previousFolder = targetFolderHistory[previousIndex];
     
-    // Cắt bớt lịch sử
+    // Thư mục chúng ta sẽ quay về
+    const targetFolder = targetFolderHistory[previousIndex];
+    
+    // Cắt lịch sử (Chỉ giữ lại đến previousIndex + 1)
     targetFolderHistory = targetFolderHistory.slice(0, previousIndex + 1);
     
-    // Tải lại thư mục trước đó (Không push lịch sử mới)
-    listTargetFolders(previousFolder.id, previousFolder.name, false); 
+    // 2. Tải lại thư mục trước đó (shouldPushHistory = false)
+    listTargetFolders(targetFolder.id, targetFolder.name, false); 
 }
-
-
+	
 async function listTargetFolders(id, name, shouldPushHistory = true) {
     
     // 1. CẬP NHẬT LỊCH SỬ
     let currentFolder;
     if (shouldPushHistory) {
-        // Tránh trùng lặp nếu lỡ gọi lại thư mục cũ
-        if (id !== targetFolderHistory[targetFolderHistory.length - 1]?.id) {
-             targetFolderHistory.push({ id: id, name: name });
+        // Chỉ push nếu ID mới khác ID hiện tại (Click vào thư mục con)
+        const lastFolderId = targetFolderHistory[targetFolderHistory.length - 1]?.id;
+        if (id !== lastFolderId) {
+            targetFolderHistory.push({ id: id, name: name });
         }
+    } else {
+        // Nếu shouldPushHistory là FALSE (Tải lại/Đăng nhập), 
+        // đảm bảo thư mục hiện tại là thư mục cuối cùng trong lịch sử.
+        // (Trường hợp navigateTargetHistoryBack đã tự slice lịch sử)
+        // Tuy nhiên, vì navigateTargetHistoryBack đã tự slice và gọi hàm với ID/Name, 
+        // chúng ta cần đảm bảo logic lấy currentFolder luôn đúng.
     }
     
+    // Lấy thư mục hiện tại sau khi có thể đã được push hoặc slice
     currentFolder = targetFolderHistory[targetFolderHistory.length - 1];
     
     // Cập nhật biến global (cho Upload)
@@ -190,7 +200,7 @@ async function listTargetFolders(id, name, shouldPushHistory = true) {
     updateTargetStatus();
     updateUploadInputStatus();
 
-    // Cập nhật trạng thái nút quay lại
+    // Cập nhật trạng thái nút quay lại (QUAN TRỌNG: Sáng khi có > 1 mục trong lịch sử)
     goBackTargetFolderButton.disabled = targetFolderHistory.length <= 1;
     
     targetFolderList.innerHTML = '<div class="placeholder-text">Đang tải...</div>';
