@@ -76,13 +76,18 @@
                 <div class="card-header">
                     <h2>🔑 Tài khoản</h2>
                 </div>
-                <div class="card-body center-content">
-                    <div id="auth_status" class="status-text-small">Chưa kết nối</div>
-                    <div class="auth-buttons">
-                        <button id="authorize_button" class="btn btn-primary full-width" disabled>
+                <div class="card-body">
+                    <div class="account-avatar">👤</div>
+                    
+                    <div id="auth_status_badge" class="status-badge disconnected">
+                        <span class="dot"></span> <span id="auth_text">Chưa kết nối</span>
+                    </div>
+
+                    <div class="auth-buttons" style="width: 100%; margin-top: 5px;">
+                        <button id="authorize_button" class="btn btn-primary full-width">
                             Đăng nhập Google
                         </button>
-                        <button id="signout_button" class="btn btn-outline full-width" disabled style="display: none;">
+                        <button id="signout_button" class="btn btn-outline full-width" style="display: none;">
                             Đăng xuất
                         </button>
                     </div>

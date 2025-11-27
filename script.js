@@ -24,7 +24,8 @@ let currentFolderId = 'root';
 let folderHistory = [{ id: 'root', name: 'Drive của tôi' }];
 
 // --- ELEMENTS ---
-const authorizeButton = document.getElementById("authorize_button");
+const authorizeButton = document.getElementById("auth_status_badge");
+const authText = document.getElementById("auth_text");
 const signoutButton = document.getElementById("signout_button");
 const authStatus = document.getElementById("auth_status");
 
@@ -87,13 +88,16 @@ function maybeEnableAuthButton() {
 authorizeButton.onclick = () => {
     tokenClient.callback = async (resp) => {
         if (resp.error) {
-            authStatus.textContent = "Lỗi: " + resp.error;
+            alert("Lỗi đăng nhập: " + resp.error);
             return;
         }
-        // UI Change
+        // UI Change: Đăng nhập thành công
         authorizeButton.style.display = "none";
         signoutButton.style.display = "inline-flex";
-        authStatus.textContent = "Đã kết nối: " + (gapi.client.getToken() ? "OK" : "Lỗi");
+        
+        // Cập nhật Badge xanh
+        authStatusBadge.className = "status-badge connected";
+        authText.textContent = "Đã kết nối";
         
         signoutButton.disabled = false;
         listButton.disabled = false;
@@ -106,18 +110,22 @@ authorizeButton.onclick = () => {
     tokenClient.requestAccessToken({ prompt: "select_account" });
 };
 
+// --- XỬ LÝ ĐĂNG XUẤT ---
 signoutButton.onclick = () => {
     const token = gapi.client.getToken();
     if (token) {
         google.accounts.oauth2.revoke(token.access_token);
         gapi.client.setToken("");
     }
-    // Reset UI
+    // Reset UI: Về trạng thái chưa đăng nhập
     authorizeButton.style.display = "inline-flex";
     signoutButton.style.display = "none";
-    authStatus.textContent = "Đã đăng xuất.";
     
-    // Reset Data
+    // Cập nhật Badge xám
+    authStatusBadge.className = "status-badge disconnected";
+    authText.textContent = "Chưa kết nối";
+    
+    // Reset Data (Giữ nguyên phần này của bạn)
     filesToUpload = [];
     filesTbody.innerHTML = '<tr><td colspan="5" class="placeholder-text">Vui lòng đăng nhập.</td></tr>';
     targetFolderList.innerHTML = '<div class="placeholder-text">Đăng nhập để xem...</div>';
@@ -324,7 +332,7 @@ async function listFiles(folderId) {
                 tr.innerHTML = `
                     <td>${isFolder ? '📁 ' : '📄 '}${file.name}</td>
                     <td>${isFolder ? 'Folder' : 'File'}</td>
-                    <td>${file.modifiedTime ? new Date(file.modifiedTime).toLocaleDateString() : '-'}</td>
+                    <td>${formatDateCustom(file.modifiedTime)}</td> 
                     <td>${isFolder ? '-' : formatBytes(file.size)}</td>
                     <td>${file.webViewLink ? `<a href="${file.webViewLink}" target="_blank" onclick="event.stopPropagation()">Mở</a>` : '-'}</td>
                 `;
@@ -360,4 +368,18 @@ function formatBytes(bytes) {
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+// Helper format date: dd/mm/yy hh:mm
+function formatDateCustom(isoString) {
+    if (!isoString) return '-';
+    const date = new Date(isoString);
+    
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Tháng bắt đầu từ 0
+    const year = String(date.getFullYear()).slice(-2); // Lấy 2 số cuối của năm
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
 }
