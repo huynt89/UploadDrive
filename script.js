@@ -8,16 +8,17 @@ const DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/drive/v3/res
 let tokenClient;
 let gapiInited = false;
 let gisInited = false;
-const folderIdCache = {}; 
-let filesToUpload = []; 
+const folderIdCache = {};	
+let filesToUpload = [];	
 
 let targetFolderId = 'root';
 let targetFolderName = 'Drive của tôi';
 
+// BIẾN ĐIỀU HƯỚNG CHO CỘT 2 (ĐÃ KHAI BÁO)
 let targetCurrentFolderId = 'root'; // ID thư mục đang được hiển thị trong cột 2
 let targetFolderHistory = [{ id: 'root', name: 'Drive của tôi' }]; // Lịch sử duyệt cho cột 2
 
-let currentFolderId = 'root'; 
+let currentFolderId = 'root';	
 let folderHistory = [{ id: 'root', name: 'Drive của tôi' }];
 
 // Các element cho Đăng nhập
@@ -27,7 +28,7 @@ const authStatus = document.getElementById("auth_status");
 
 // Các element cho Upload/Chọn File
 const uploadButton = document.getElementById("upload_button");
-const uploadStatus = document.getElementById("upload_status"); 
+const uploadStatus = document.getElementById("upload_status");	
 const progressDisplay = document.getElementById("progress_display");
 const progressText = document.getElementById("progress_text");
 const progressBarInner = document.getElementById("progress_bar_inner");
@@ -55,34 +56,34 @@ goBackButton.onclick = () => {
 
 // Gọi khi api.js load xong
 function gapiLoaded() {
-	 gapi.load("client", initializeGapiClient);
+	gapi.load("client", initializeGapiClient);
 }
 
 // Khởi tạo client của Google API
 async function initializeGapiClient() {
-	 try {
+	try {
 	await gapi.client.init({
-		 apiKey: API_KEY,
-		 discoveryDocs: [DISCOVERY_DOC],
+		apiKey: API_KEY,
+		discoveryDocs: [DISCOVERY_DOC],
 	});
 	gapiInited = true;
 	authStatus.textContent = "Thư viện Google API đã sẵn sàng. Đang chờ Google Identity Services...";
 	maybeEnableAuthButton();
-	 } catch (error) {
+	} catch (error) {
 	console.error(error);
 	authStatus.textContent = "Lỗi khởi tạo Google API: " + error.message;
 	authStatus.classList.add("error");
-	 }
+	}
 }
 
 // Gọi khi gsi/client load xong
 function gisLoaded() {
-	 tokenClient = google.accounts.oauth2.initTokenClient({
+	tokenClient = google.accounts.oauth2.initTokenClient({
 	client_id: CLIENT_ID,
 	scope: SCOPES,
-	callback: "", 
-	 });
-	 gisInited = true;
+	callback: "",	
+	});
+	gisInited = true;
 	
 	// Lắng nghe sự kiện chọn file/folder ngay sau khi GIS load
 	fileInputFiles.onchange = (e) => {
@@ -95,29 +96,30 @@ function gisLoaded() {
 		updateUploadInputStatus();
 	};
 	
-	reloadTargetFoldersButton.onclick = () => { listTargetFolders(targetCurrentFolderId); };
+	// SỬA: Tải lại thư mục đang xem
+	reloadTargetFoldersButton.onclick = () => { listTargetFolders(targetCurrentFolderId, targetFolderHistory[targetFolderHistory.length - 1].name); };
 
-	 maybeEnableAuthButton();
+	maybeEnableAuthButton();
 }
 
 // Chỉ enable nút login khi cả 2 thư viện đã sẵn sàng
 function maybeEnableAuthButton() {
-	 if (gapiInited && gisInited) {
+	if (gapiInited && gisInited) {
 	authorizeButton.disabled = false;
 	authStatus.textContent = "Sẵn sàng. Bấm \"Đăng nhập Google\" để cấp quyền.";
-	 }
+	}
 }
 
 // Cập nhật trạng thái sau khi chọn file/folder
 function updateUploadInputStatus() {
 	const count = filesToUpload.length;
 	if (count > 0) {
-		// Đảm bảo dòng này có targetFolderName
+		// Dùng targetFolderName
 		uploadStatus.textContent = `Sẵn sàng upload ${count} mục. Thư mục đích: ${targetFolderName}`;
 		uploadStatus.classList.remove("error", "success");
 		uploadButton.disabled = false;
 	} else {
-		// Đảm bảo dòng này có targetFolderName
+		// Dùng targetFolderName
 		uploadStatus.textContent = `Chưa có tệp nào được chọn. Thư mục đích hiện tại: ${targetFolderName}`;
 		uploadStatus.classList.remove("error", "success");
 		uploadButton.disabled = true;
@@ -127,16 +129,16 @@ function updateUploadInputStatus() {
 
 // Khi bấm Đăng nhập
 authorizeButton.onclick = () => {
-	 authorizeButton.disabled = true;
-	 authStatus.textContent = "Đang mở popup đăng nhập...";
+	authorizeButton.disabled = true;
+	authStatus.textContent = "Đang mở popup đăng nhập...";
 
-	 tokenClient.callback = async (resp) => {
+	tokenClient.callback = async (resp) => {
 	if (resp.error !== undefined) {
-		 console.error(resp);
-		 authStatus.textContent = "Lỗi đăng nhập: " + (resp.error || "Unknown error");
-		 authStatus.classList.add("error");
-		 authorizeButton.disabled = false;
-		 return;
+		console.error(resp);
+		authStatus.textContent = "Lỗi đăng nhập: " + (resp.error || "Unknown error");
+		authStatus.classList.add("error");
+		authorizeButton.disabled = false;
+		return;
 	}
 	
 	authStatus.textContent = "Đã đăng nhập và cấp quyền cho Google Drive.";
@@ -146,55 +148,59 @@ authorizeButton.onclick = () => {
 	authorizeButton.textContent = "✅ Đã đăng nhập";
 	signoutButton.disabled = false;
 	listButton.disabled = false;
-	updateUploadInputStatus(); 
+	updateUploadInputStatus();	
 	
-	await listFiles(); 
-	await listTargetFolders(); 
-	 };
+	await listFiles();	
+	await listTargetFolders();	
+	};
 
-	 const token = gapi.client.getToken();
-	 if (!token) {
+	const token = gapi.client.getToken();
+	if (!token) {
 	tokenClient.requestAccessToken({ prompt: "select_account" });
-	 } else {
+	} else {
 	tokenClient.requestAccessToken({ prompt: "" });
-	 }
+	}
 };
 
 // Đăng xuất
 signoutButton.onclick = () => {
-	 const token = gapi.client.getToken();
-	 if (token !== null) {
+	const token = gapi.client.getToken();
+	if (token !== null) {
 	google.accounts.oauth2.revoke(token.access_token);
 	gapi.client.setToken("");
-	 }
+	}
 
-	 authorizeButton.textContent = "🔐 Đăng nhập Google";
-	 authorizeButton.disabled = false;
-	 signoutButton.disabled = true;
-	 uploadButton.disabled = true;
-	 listButton.disabled = true;
-	 filesToUpload = []; 
-	 progressDisplay.style.display = 'none';
-	 filesTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: #9ca3af;">Vui lòng đăng nhập để xem danh sách file.</td></tr>';
-	 listStatus.textContent = "Chưa tải danh sách file.";
+	authorizeButton.textContent = "🔐 Đăng nhập Google";
+	authorizeButton.disabled = false;
+	signoutButton.disabled = true;
+	uploadButton.disabled = true;
+	listButton.disabled = true;
+	filesToUpload = [];	
+	progressDisplay.style.display = 'none';
+	filesTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: #9ca3af;">Vui lòng đăng nhập để xem danh sách file.</td></tr>';
+	listStatus.textContent = "Chưa tải danh sách file.";
 	
 	// Reset điều hướng
 	currentFolderId = 'root';
 	folderHistory = [{ id: 'root', name: 'Drive của tôi' }];
 	renderBreadcrumb();
 
+	// Reset điều hướng thư mục đích
 	targetFolderId = 'root';
 	targetFolderName = 'Drive của tôi';
+	targetCurrentFolderId = 'root';
+	targetFolderHistory = [{ id: 'root', name: 'Drive của tôi' }];
 	if (targetStatus) {
-		targetStatus.innerHTML = 'Thư mục hiện tại: <strong>/Drive của tôi</strong>';
+		// Gọi hàm này để reset giao diện Cột 2
+		renderTargetBreadcrumb();
 	}
 	if (targetFolderList) {
 		targetFolderList.innerHTML = '<div style="text-align: center; color: #9ca3af;">Đang chờ đăng nhập...</div>';
 	}
-	 authStatus.textContent = "Đã đăng xuất. Cần đăng nhập lại để sử dụng.";
-	 authStatus.classList.remove("success");
+	authStatus.textContent = "Đã đăng xuất. Cần đăng nhập lại để sử dụng.";
+	authStatus.classList.remove("success");
 };
-    
+			
 // =========================================================
 // === HÀM XỬ LÝ UPLOAD ===
 // =========================================================
@@ -250,7 +256,7 @@ uploadButton.onclick = async () => {
 		return;
 	}
 
-	const files = filesToUpload; 
+	const files = filesToUpload;	
 	if (files.length === 0) {
 		uploadStatus.textContent = "Vui lòng chọn file hoặc thư mục để upload.";
 		uploadStatus.classList.add("error");
@@ -270,7 +276,7 @@ uploadButton.onclick = async () => {
 	uploadStatus.textContent = `Đang chuẩn bị upload ${files.length} mục vào thư mục: ${targetFolderName}...`;
 
 	try {
-		Object.keys(folderIdCache).forEach(k => delete folderIdCache[k]); 
+		Object.keys(folderIdCache).forEach(k => delete folderIdCache[k]);	
 
 		for (let i = 0; i < files.length; i++) {
 			const file = files[i];
@@ -281,11 +287,11 @@ uploadButton.onclick = async () => {
 			progressBarInner.style.width = '0%';
 			
 			//SỬA: Dùng targetFolderId làm thư mục gốc cho upload
-			let parentFolderId = targetFolderId; 
+			let parentFolderId = targetFolderId;	
 
 			if (file.webkitRelativePath) {
 				const parts = file.webkitRelativePath.split('/');
-				const pathSegments = parts.slice(0, -1); 
+				const pathSegments = parts.slice(0, -1);	
 
 				if (pathSegments.length > 0) {
 					// SỬA: DÙNG targetFolderId LÀM PARENT CHO FOLDER CON
@@ -298,7 +304,7 @@ uploadButton.onclick = async () => {
 			const metadata = {
 				name: file.name,
 				mimeType: file.type || "application/octet-stream",
-				parents: [parentFolderId], 
+				parents: [parentFolderId],	
 			};
 			
 			const form = new FormData();
@@ -361,8 +367,8 @@ uploadButton.onclick = async () => {
 		}
 
 		// Reset filesToUpload và cập nhật trạng thái
-		filesToUpload = []; 
-		updateUploadInputStatus(); 
+		filesToUpload = [];	
+		updateUploadInputStatus();	
 
 		// Nếu upload vào thư mục hiện tại, tải lại danh sách file
 		if (targetFolderId === currentFolderId) {
@@ -387,22 +393,23 @@ uploadButton.onclick = async () => {
 // === HÀM LIỆT KÊ THƯ MỤC ĐÍCH (ĐÃ SỬA ĐỂ HỖ TRỢ DUYỆT) ===
 // =========================================================
 
+// THÊM: parentFolderName để cập nhật tên chính xác (YÊU CẦU 1)
 async function listTargetFolders(parentFolderId = 'root', parentFolderName = 'Drive của tôi') {
 	targetCurrentFolderId = parentFolderId;
 	targetFolderList.innerHTML = '<div style="text-align: center; color: #2563eb;">Đang tải danh sách thư mục...</div>';
 	reloadTargetFoldersButton.disabled = true;
 
-	// Cập nhật lịch sử duyệt và hiển thị đường dẫn + nút chọn
+	// Cập nhật lịch sử duyệt và hiển thị đường dẫn + nút chọn (YÊU CẦU 1)
 	updateTargetHistory(parentFolderId, parentFolderName);
-	renderTargetBreadcrumb(); 
+	renderTargetBreadcrumb();	
 
 	try {
 		const response = await gapi.client.drive.files.list({
-			pageSize: 50, 
+			pageSize: 50,	
 			fields: "files(id,name,mimeType)",
-			orderBy: "name", 
+			orderBy: "name",	
 			// DÙNG targetCurrentFolderId LÀM PARENT ID ĐỂ DUYỆT
-			q: `mimeType = 'application/vnd.google-apps.folder' and '${targetCurrentFolderId}' in parents and trashed = false`, 
+			q: `mimeType = 'application/vnd.google-apps.folder' and '${targetCurrentFolderId}' in parents and trashed = false`,	
 		});
 
 		const folders = response.result.files || [];
@@ -424,11 +431,12 @@ async function listTargetFolders(parentFolderId = 'root', parentFolderName = 'Dr
 	}
 }
 
-// Hàm render từng mục folder và xử lý click: CHUYỂN VÀO THƯ MỤC CON
+// Hàm render từng mục folder và xử lý click: CHUYỂN VÀO THƯ MỤC CON & TỰ ĐỘNG CHỌN (YÊU CẦU 2)
 function renderTargetFolderItem(folder) {
 	const div = document.createElement('div');
 	div.className = 'folder-item';
 	
+	// Thêm class active nếu đang được chọn làm đích
 	if (folder.id === targetFolderId) {
 		div.classList.add('active-target');
 	}
@@ -438,31 +446,29 @@ function renderTargetFolderItem(folder) {
 
 	div.innerHTML = `<span role="img" aria-label="thư mục">📁</span> ${folder.name}`;
 	
-	// LOGIC MỚI: BẤM VÀO SẼ CHUYỂN VÀO THƯ MỤC CON
+	// LOGIC MỚI: BẤM VÀO SẼ CHUYỂN VÀO THƯ MỤC CON VÀ TỰ ĐỘNG CHỌN NÓ LÀM ĐÍCH
 	div.onclick = () => {
-		// Gọi hàm listTargetFolders để duyệt thư mục con
+		// YÊU CẦU 2: TỰ ĐỘNG CHỌN THƯ MỤC NÀY LÀM ĐÍCH
 		targetFolderId = folder.id;
 		targetFolderName = folder.name;
 		updateUploadInputStatus(); // Cập nhật trạng thái upload
 		
+		// YÊU CẦU 1: Gọi hàm listTargetFolders để duyệt thư mục con, truyền tên chính xác
 		listTargetFolders(folder.id, folder.name);
 	};
 
 	targetFolderList.appendChild(div);
 }
 
-// Hàm cập nhật lịch sử duyệt thư mục đích
-function updateTargetHistory(newFolderId) {
-    const newFolder = { id: newFolderId, name: 'Thư mục con' }; // Tên tạm
+// Hàm cập nhật lịch sử duyệt thư mục đích (ĐÃ SỬA: NHẬN THÊM TÊN) (YÊU CẦU 1)
+function updateTargetHistory(newFolderId, newFolderName = 'Thư mục con') { 
+    const newFolder = { id: newFolderId, name: newFolderName };
     
-    // 1. Tìm thông tin folder trong folderHistory của cột Duyệt Drive (nếu có)
-    const folderInfo = folderHistory.find(item => item.id === newFolderId);
+    // Đảm bảo Drive của tôi luôn có tên chính xác
     if (newFolderId === 'root') {
         newFolder.name = 'Drive của tôi';
-    } else if (folderInfo) {
-        newFolder.name = folderInfo.name;
     } 
-    
+
     // 2. Cập nhật targetFolderHistory
     const existingIndex = targetFolderHistory.findIndex(item => item.id === newFolderId);
 
@@ -475,7 +481,7 @@ function updateTargetHistory(newFolderId) {
     }
 }
 
-// Hàm hiển thị đường dẫn và nút chọn cho cột Thư mục Đích
+// Hàm hiển thị đường dẫn và nút chọn cho cột Thư mục Đích (ĐÃ SỬA: BỎ NÚT CHỌN) (YÊU CẦU 2)
 function renderTargetBreadcrumb() {
 	const currentFolder = targetFolderHistory[targetFolderHistory.length - 1];
     
@@ -484,7 +490,8 @@ function renderTargetBreadcrumb() {
 	const pathArray = targetFolderHistory.map((item, index) => {
 		// Tạo link để click quay lại
 		if (index < targetFolderHistory.length - 1) {
-			return `<a href="javascript:void(0)" class="link" onclick="listTargetFolders('${item.id}')">${item.name}</a>`;
+			// SỬA: Truyền cả ID và Tên khi click quay lại trên breadcrumb
+			return `<a href="javascript:void(0)" class="link" onclick="listTargetFolders('${item.id}', '${item.name.replace(/'/g, "\\'")}')">${item.name}</a>`;
 		}
 		// Thư mục hiện tại (không link)
 		return `<strong>${item.name}</strong>`;
@@ -492,13 +499,6 @@ function renderTargetBreadcrumb() {
 	
 	// Hiển thị đường dẫn
 	pathHtml = `<div style="font-size: 13px; color: #4b5563; margin-bottom: 5px;">${pathArray}</div>`;
-
-    // Hiển thị nút "Chọn thư mục này"
-    const selectButtonHtml = `
-        <button id="select_target_folder_btn" class="btn btn-primary" style="padding: 6px 10px; font-size: 14px; margin-top: 5px; width: 100%;">
-            ✅ Chọn thư mục: ${currentFolder.name}
-        </button>
-    `;
 
     // Nút Quay lại (nếu không phải thư mục gốc)
     const goBackBtnHtml = (targetFolderHistory.length > 1) ? `
@@ -509,40 +509,30 @@ function renderTargetBreadcrumb() {
 
     // Cập nhật thẻ targetStatus
     targetStatus.innerHTML = pathHtml + 
-        `<div class="buttons-row" style="margin: 0; padding: 0;">` +
+        `<div class="buttons-row" style="margin: 0; padding: 0; align-items: center;">` +
         goBackBtnHtml + 
-        selectButtonHtml +
+        // THAY THẾ NÚT CHỌN BẰNG THÔNG BÁO ĐÍCH HIỆN TẠI
+        `<span style="font-size: 14px; margin-top: 5px; color: #16a34a; font-weight: 600; margin-left: 10px;">✅ Đích: ${targetFolderName}</span>` + 
         `</div>`;
     
     // Gắn sự kiện cho nút Quay lại
     if (targetFolderHistory.length > 1) {
         document.getElementById('target_go_back_btn').onclick = () => {
             const previousFolder = targetFolderHistory[targetFolderHistory.length - 2];
-            listTargetFolders(previousFolder.id);
+			// Khi bấm nút quay lại, ta cũng phải chọn thư mục cha làm đích mới
+			targetFolderId = previousFolder.id;
+			targetFolderName = previousFolder.name;
+			updateUploadInputStatus();
+			
+			// Tải lại danh sách
+            listTargetFolders(previousFolder.id, previousFolder.name);
         };
     }
-
-    // Gắn sự kiện cho nút Chọn
-    document.getElementById('select_target_folder_btn').onclick = () => {
-        // Cập nhật biến thư mục đích chính
-        targetFolderId = currentFolder.id;
-        targetFolderName = currentFolder.name;
-        
-        // Cập nhật lại trạng thái upload
-        updateUploadInputStatus();
-        
-        // Cập nhật visual cho nút chọn (thông báo chọn thành công)
-        const btn = document.getElementById('select_target_folder_btn');
-        const originalText = btn.textContent;
-        btn.textContent = `✅ Đã chọn làm đích: ${targetFolderName}`;
-        setTimeout(() => {
-            btn.textContent = originalText;
-        }, 1500);
-    };
 
     // Đảm bảo trạng thái upload luôn phản ánh đích cuối cùng
     updateUploadInputStatus();
 }
+
 
 // =========================================================
 // === HÀM LIỆT KÊ FILE VÀ ĐIỀU HƯỚNG ===
@@ -591,84 +581,84 @@ listButton.onclick = () => {
 
 // Hàm liệt kê file (nhận folderId làm tham số)
 async function listFiles(folderId = 'root') {
-	 listStatus.classList.remove("error", "success");
-	 const token = gapi.client.getToken();
-	 if (!token) {
+	listStatus.classList.remove("error", "success");
+	const token = gapi.client.getToken();
+	if (!token) {
 	listStatus.textContent = "Bạn cần đăng nhập Google trước.";
 	listStatus.classList.add("error");
 	return;
-	 }
+	}
 	
-	 // Cập nhật ID thư mục hiện tại
+	// Cập nhật ID thư mục hiện tại
 	currentFolderId = folderId;
 	renderBreadcrumb(); // Cập nhật đường dẫn
 
-	 listButton.disabled = true;
-	 listStatus.textContent = "Đang tải danh sách file...";
-	 filesTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: #9ca3af;">Đang tải...</td></tr>';
+	listButton.disabled = true;
+	listStatus.textContent = "Đang tải danh sách file...";
+	filesTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: #9ca3af;">Đang tải...</td></tr>';
 
-	 try {
+	try {
 	const response = await gapi.client.drive.files.list({
-		 pageSize: 50, // Tăng giới hạn hiển thị
-		 fields: "files(id,name,mimeType,modifiedTime,iconLink,webViewLink,size)",
-		 // Ưu tiên hiển thị Folder trước, sau đó sắp xếp theo tên
-		 orderBy: "folder,name",
-		 // Truy vấn: chỉ lấy các mục có thư mục cha là currentFolderId VÀ KHÔNG BỊ XOÁ
-		 q: `'${currentFolderId}' in parents and trashed = false`, 
+		pageSize: 50, // Tăng giới hạn hiển thị
+		fields: "files(id,name,mimeType,modifiedTime,iconLink,webViewLink,size)",
+		// Ưu tiên hiển thị Folder trước, sau đó sắp xếp theo tên
+		orderBy: "folder,name",
+		// Truy vấn: chỉ lấy các mục có thư mục cha là currentFolderId VÀ KHÔNG BỊ XOÁ
+		q: `'${currentFolderId}' in parents and trashed = false`,	
 	});
 
 	const files = response.result.files || [];
 	filesTbody.innerHTML = "";
 
 	if (files.length === 0) {
-		 listStatus.textContent = "Không tìm thấy file/thư mục nào trong thư mục này.";
-		 listStatus.classList.add("success");
-		 filesTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: #9ca3af;">Thư mục này trống.</td></tr>';
-		 return;
+		listStatus.textContent = "Không tìm thấy file/thư mục nào trong thư mục này.";
+		listStatus.classList.add("success");
+		filesTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: #9ca3af;">Thư mục này trống.</td></tr>';
+		return;
 	}
 
 	for (const file of files) {
-		 const tr = document.createElement("tr");
+		const tr = document.createElement("tr");
 
-		 const isFolder = file.mimeType === 'application/vnd.google-apps.folder';
-		 
-		 // Gắn sự kiện click vào hàng nếu đó là thư mục
-		 if (isFolder) {
+		const isFolder = file.mimeType === 'application/vnd.google-apps.folder';
+			
+		// Gắn sự kiện click vào hàng nếu đó là thư mục
+		if (isFolder) {
 		tr.classList.add('folder-row');
 		tr.onclick = () => {
 			// Thêm thư mục vào lịch sử và tải danh sách file mới
 			folderHistory.push({ id: file.id, name: file.name });
-			listFiles(file.id); 
+			listFiles(file.id);	
 		};
-		 }
+		}
 
-		 const nameTd = document.createElement("td");
-		 nameTd.textContent = file.name || "(Không tên)";
-	  // Thêm data-label cho responsive
-	  nameTd.setAttribute('data-label', 'Tên file');
+		const nameTd = document.createElement("td");
+		nameTd.textContent = file.name || "(Không tên)";
+		// Thêm data-label cho responsive
+		nameTd.setAttribute('data-label', 'Tên file');
 
-		 const typeTd = document.createElement("td");
-		 const tag = document.createElement("span");
-		 tag.className = "tag";
-		 tag.textContent = isFolder ? "📁 Folder" : (file.mimeType || "Unknown");	
-		 typeTd.appendChild(tag);
-	  typeTd.setAttribute('data-label', 'Loại');
+		const typeTd = document.createElement("td");
+		const tag = document.createElement("span");
+		tag.className = "tag";
+		tag.textContent = isFolder ? "📁 Folder" : (file.mimeType || "Unknown");	
+		typeTd.appendChild(tag);
+		typeTd.setAttribute('data-label', 'Loại');
 
-		 const modifiedTd = document.createElement("td");
-		 modifiedTd.textContent = file.modifiedTime
+		const modifiedTd = document.createElement("td");
+		modifiedTd.textContent = file.modifiedTime
 		? new Date(file.modifiedTime).toLocaleString()
 		: "";
-	  modifiedTd.setAttribute('data-label', 'Cập nhật');
+		modifiedTd.setAttribute('data-label', 'Cập nhật');
 
-		 const sizeTd = document.createElement("td");
-		 sizeTd.textContent = isFolder	
-		? "-" 
+		const sizeTd = document.createElement("td");
+		sizeTd.textContent = isFolder	
+		? "-"	
 		: (file.size ? formatBytes(parseInt(file.size, 10)) : "-");
-	  sizeTd.setAttribute('data-label', 'Kích thước');
+		sizeTd.setAttribute('data-label', 'Kích thước');
 
-		 const linkTd = document.createElement("td");
-	  linkTd.setAttribute('data-label', 'Xem');
-		 if (file.webViewLink) {
+		const linkTd = document.createElement("td");
+		linkTd.setAttribute('data-label', 'Xem');
+		if (file.webViewLink) {
 		const a = document.createElement("a");
 		a.href = file.webViewLink;
 		a.target = "_blank";
@@ -681,35 +671,35 @@ async function listFiles(folderId = 'root') {
 			a.onclick = (e) => { e.stopPropagation(); }; // Ngăn chặn sự kiện click lan truyền lên row
 		}
 		linkTd.appendChild(a);
-		 } else {
+		} else {
 		linkTd.textContent = "-";
-		 }
+		}
 
-		 tr.appendChild(nameTd);
-		 tr.appendChild(typeTd);
-		 tr.appendChild(modifiedTd);
-		 tr.appendChild(sizeTd);
-		 tr.appendChild(linkTd);
+		tr.appendChild(nameTd);
+		tr.appendChild(typeTd);
+		tr.appendChild(modifiedTd);
+		tr.appendChild(sizeTd);
+		tr.appendChild(linkTd);
 
-		 filesTbody.appendChild(tr);
+		filesTbody.appendChild(tr);
 	}
 
 	listStatus.textContent = `Đã tải ${files.length} mục.`;
 	listStatus.classList.add("success");
-	 } catch (error) {
+	} catch (error) {
 	console.error(error);
 	listStatus.textContent = "Lỗi tải danh sách file: " + error.message;
 	listStatus.classList.add("error");
-	 } finally {
+	} finally {
 	listButton.disabled = false;
-	 }
+	}
 }
 
 // Helper format size
 function formatBytes(bytes) {
-	 if (bytes === 0) return "0 B";
-	 const k = 1024;
-	 const sizes = ["B", "KB", "MB", "GB", "TB"];
-	 const i = Math.floor(Math.log(bytes) / Math.log(k));
-	 return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+	if (bytes === 0) return "0 B";
+	const k = 1024;
+	const sizes = ["B", "KB", "MB", "GB", "TB"];
+	const i = Math.floor(Math.log(bytes) / Math.log(k));
+	return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 }
