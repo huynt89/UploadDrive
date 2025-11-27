@@ -212,6 +212,12 @@ main {
 
 #authorize_button {
     width: 100%;
+    /* Bo tròn hoàn toàn (pill shape) */
+    border-radius: 20px; 
+    /* Đảm bảo chữ Google nằm ngang hàng */
+    justify-content: center; 
+    font-size: 14px;
+    font-weight: 600;
 }
 
 /* === TABLE LIST (PHẦN DƯỚI) === */
@@ -259,8 +265,17 @@ td {
     align-items: center;
     gap: 5px;
 }
-.btn-primary { background: #2563eb; color: white; }
-.btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+.btn-primary { 
+    background: #2563eb; 
+    color: white; 
+    border: 1px solid #1e40af; /* Thêm border màu đậm hơn */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* Thêm đổ bóng nhẹ */
+    padding: 10px 15px; /* Tăng padding để nút lớn hơn */
+}
+.btn-primary:hover:not(:disabled) { 
+    background: #1d4ed8; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
 .btn-outline { background: white; border-color: #d1d5db; color: #374151; }
 .btn-outline:hover:not(:disabled) { background: #f9fafb; border-color: #9ca3af; }
 .btn:disabled { opacity: 0.6; cursor: not-allowed; }
