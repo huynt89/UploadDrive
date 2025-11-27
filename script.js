@@ -14,6 +14,9 @@ let filesToUpload = [];
 let targetFolderId = 'root';
 let targetFolderName = 'Drive của tôi';
 
+let targetCurrentFolderId = 'root'; // ID thư mục đang được hiển thị trong cột 2
+let targetFolderHistory = [{ id: 'root', name: 'Drive của tôi' }]; // Lịch sử duyệt cho cột 2
+
 let currentFolderId = 'root'; 
 let folderHistory = [{ id: 'root', name: 'Drive của tôi' }];
 
