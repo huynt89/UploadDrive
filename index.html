@@ -49,23 +49,24 @@
 	 	 	 	 </div>
 	 	 	 </section>
 	 	 	 	 	 	 
-	 	 	 	 	 	 <section id="card_target_folder" class="card">
-	 	 	 	 	 	 	 <h2><span role="img" aria-label="ổ đĩa">📍</span> Chọn Thư mục Đích</h2>
-	 	 	 	 	 	 	 <small>Chọn thư mục sẽ lưu trữ các tệp/thư mục bạn upload. Mặc định: **Drive của tôi**.</small>
-	 	 	 	 	 	 	 
-	 	 	 	 	 	 	 <div id="target_status" class="status" style="margin-top: 5px;">
-	 	 	 	 	 	 	 	 Thư mục hiện tại: <strong>/Drive của tôi</strong>
-	 	 	 	 	 	 	 </div>
+	 	 	 	 	 	 <section id="card_select_target" class="card">
+							<h2><span role="img" aria-label="mục tiêu">🎯</span> Chọn Thư mục Đích</h2>
+							<small>Chọn thư mục sẽ lưu trữ các tệp/thư mục bạn upload. Mặc định: **Drive của tôi**.</small>
 
-	 	 	 	 	 	 	 <div id="target_folder_list">
-	 	 	 	 	 	 	 	 <div style="text-align: center; color: #9ca3af;">Đang chờ đăng nhập...</div>
-	 	 	 	 	 	 	 </div>
-	 	 	 	 	 	 	 <div class="buttons-row" style="margin-top: 10px;">
-	 	 	 	 	 	 	 	 <button id="reload_target_folders" class="btn btn-outline" disabled>
-	 	 	 	 	 	 	 		 🔄 Tải lại
-	 	 	 	 	 	 	 	 </button>
-	 	 	 	 	 	 	 </div>
-	 	 	 	 	 	 </section>
+							<div id="target_status" class="status" style="margin-top: 15px;">
+								Thư mục hiện tại: <strong>/Drive của tôi</strong>
+							</div>
+
+							<div id="target_folder_list">
+								<div style="text-align: center; color: #9ca3af;">Đang chờ đăng nhập...</div>
+							</div>
+							
+							<div class="buttons-row">
+								<button id="reload_target_folders" class="btn btn-outline" disabled style="margin-top: 10px;">
+									🔄 Tải lại
+								</button>
+							</div>
+						</section>
 	 	 	 	 	 	 <section id="card_login" class="card">
 	 	 	 	 <h2><span role="img" aria-label="khóa">🔑</span> Đăng nhập Google</h2>
 	 	 	 	 <small>Xác thực bằng OAuth 2.0 để cấp quyền truy cập Drive.</small>

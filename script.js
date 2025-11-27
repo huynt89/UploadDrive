@@ -112,11 +112,13 @@ function maybeEnableAuthButton() {
 function updateUploadInputStatus() {
 	const count = filesToUpload.length;
 	if (count > 0) {
+		// Đảm bảo dòng này có targetFolderName
 		uploadStatus.textContent = `Sẵn sàng upload ${count} mục. Thư mục đích: ${targetFolderName}`;
 		uploadStatus.classList.remove("error", "success");
 		uploadButton.disabled = false;
 	} else {
-		uploadStatus.textContent = "Chưa có tệp nào được chọn.";
+		// Đảm bảo dòng này có targetFolderName
+		uploadStatus.textContent = `Chưa có tệp nào được chọn. Thư mục đích hiện tại: ${targetFolderName}`;
 		uploadStatus.classList.remove("error", "success");
 		uploadButton.disabled = true;
 	}
@@ -385,13 +387,13 @@ uploadButton.onclick = async () => {
 // === HÀM LIỆT KÊ THƯ MỤC ĐÍCH (ĐÃ SỬA ĐỂ HỖ TRỢ DUYỆT) ===
 // =========================================================
 
-async function listTargetFolders(parentFolderId = 'root') {
+async function listTargetFolders(parentFolderId = 'root', parentFolderName = 'Drive của tôi') {
 	targetCurrentFolderId = parentFolderId;
 	targetFolderList.innerHTML = '<div style="text-align: center; color: #2563eb;">Đang tải danh sách thư mục...</div>';
 	reloadTargetFoldersButton.disabled = true;
 
 	// Cập nhật lịch sử duyệt và hiển thị đường dẫn + nút chọn
-	updateTargetHistory(parentFolderId);
+	updateTargetHistory(parentFolderId, parentFolderName);
 	renderTargetBreadcrumb(); 
 
 	try {
@@ -426,6 +428,11 @@ async function listTargetFolders(parentFolderId = 'root') {
 function renderTargetFolderItem(folder) {
 	const div = document.createElement('div');
 	div.className = 'folder-item';
+	
+	if (folder.id === targetFolderId) {
+		div.classList.add('active-target');
+	}
+	
 	div.setAttribute('data-id', folder.id);
 	div.setAttribute('data-name', folder.name);
 
@@ -434,7 +441,11 @@ function renderTargetFolderItem(folder) {
 	// LOGIC MỚI: BẤM VÀO SẼ CHUYỂN VÀO THƯ MỤC CON
 	div.onclick = () => {
 		// Gọi hàm listTargetFolders để duyệt thư mục con
-		listTargetFolders(folder.id);
+		targetFolderId = folder.id;
+		targetFolderName = folder.name;
+		updateUploadInputStatus(); // Cập nhật trạng thái upload
+		
+		listTargetFolders(folder.id, folder.name);
 	};
 
 	targetFolderList.appendChild(div);
@@ -445,11 +456,9 @@ function updateTargetHistory(newFolderId) {
     const newFolder = { id: newFolderId, name: 'Thư mục con' }; // Tên tạm
     
     // 1. Tìm thông tin folder trong folderHistory của cột Duyệt Drive (nếu có)
-    const folderInfo = folderHistory.find(item => item.id === newFolderId);
+    // const folderInfo = folderHistory.find(item => item.id === newFolderId);
     if (newFolderId === 'root') {
         newFolder.name = 'Drive của tôi';
-    } else if (folderInfo) {
-        newFolder.name = folderInfo.name;
     } 
     
     // 2. Cập nhật targetFolderHistory
@@ -473,7 +482,7 @@ function renderTargetBreadcrumb() {
 	const pathArray = targetFolderHistory.map((item, index) => {
 		// Tạo link để click quay lại
 		if (index < targetFolderHistory.length - 1) {
-			return `<a href="javascript:void(0)" class="link" onclick="listTargetFolders('${item.id}')">${item.name}</a>`;
+			return `<a href="javascript:void(0)" class="link" onclick="listTargetFolders('${item.id}', '${item.name.replace(/'/g, "\\'")}')">${item.name}</a>`; 
 		}
 		// Thư mục hiện tại (không link)
 		return `<strong>${item.name}</strong>`;
@@ -481,13 +490,6 @@ function renderTargetBreadcrumb() {
 	
 	// Hiển thị đường dẫn
 	pathHtml = `<div style="font-size: 13px; color: #4b5563; margin-bottom: 5px;">${pathArray}</div>`;
-
-    // Hiển thị nút "Chọn thư mục này"
-    const selectButtonHtml = `
-        <button id="select_target_folder_btn" class="btn btn-primary" style="padding: 6px 10px; font-size: 14px; margin-top: 5px; width: 100%;">
-            ✅ Chọn thư mục: ${currentFolder.name}
-        </button>
-    `;
 
     // Nút Quay lại (nếu không phải thư mục gốc)
     const goBackBtnHtml = (targetFolderHistory.length > 1) ? `
@@ -500,15 +502,16 @@ function renderTargetBreadcrumb() {
     targetStatus.innerHTML = pathHtml + 
         `<div class="buttons-row" style="margin: 0; padding: 0;">` +
         goBackBtnHtml + 
-        selectButtonHtml +
+		`<span style="font-size: 14px; margin-top: 5px; color: #16a34a; font-weight: 600;">✅ Đích: ${targetFolderName}</span>` + 
         `</div>`;
     
     // Gắn sự kiện cho nút Quay lại
     if (targetFolderHistory.length > 1) {
         document.getElementById('target_go_back_btn').onclick = () => {
             const previousFolder = targetFolderHistory[targetFolderHistory.length - 2];
-            listTargetFolders(previousFolder.id);
+            listTargetFolders(previousFolder.id, previousFolder.name);
         };
+		updateUploadInputStatus();
     }
 
     // Gắn sự kiện cho nút Chọn

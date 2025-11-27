@@ -417,3 +417,26 @@ footer {
  	 	 background: #eef1f4;
  	 }
 }
+
+/* Thêm CSS này để giữ chiều cao cố định cho danh sách thư mục đích */
+#target_folder_list {
+	 max-height: 350px; /* Điều chỉnh chiều cao tùy ý */
+	 overflow-y: auto; /* Bật thanh cuộn dọc khi nội dung vượt quá chiều cao */
+	 margin-top: 10px;
+}
+
+/* Thêm CSS để highlight mục đang được chọn (từ logic renderTargetFolderItem) */
+.folder-item {
+	 padding: 8px 10px;
+	 border-radius: 6px;
+	 cursor: pointer;
+	 transition: background-color 0.15s;
+}
+
+.folder-item:hover {
+	 background-color: #f3f4f6;
+}
+.folder-item.active-target {
+	 background-color: #e5e7eb; /* Màu xám nhạt để chỉ trạng thái đang được chọn làm đích */
+	 font-weight: 600;
+}
