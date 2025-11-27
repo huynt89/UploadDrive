@@ -12,12 +12,12 @@ let gisInited = false;
 let folderIdCache = {}; 
 let filesToUpload = []; 
 
-// Biến cho upload
+// Biến cho upload (Vẫn là đích cuối cùng)
 let targetFolderId = 'root';
 let targetFolderName = 'Drive của tôi';
 
-// Biến cho Cột 2 (Duyệt thư mục đích)
-let targetCurrentFolderId = 'root'; 
+// LỊCH SỬ DUYỆT THƯ MỤC ĐÍCH (Cột 2)
+let targetFolderHistory = [{ id: 'root', name: 'Drive của tôi' }]; 
 
 // Biến cho Cột Danh sách File (Phía dưới)
 let currentFolderId = 'root'; 
@@ -41,6 +41,7 @@ const fileInputFolder = document.getElementById("file_input_folder");
 const targetStatus = document.getElementById("target_status");
 const targetFolderList = document.getElementById("target_folder_list");
 const reloadTargetFoldersButton = document.getElementById("reload_target_folders");
+const goBackTargetFolderButton = document.getElementById("go_back_target_folder"); // ELEMENT MỚI
 
 const listButton = document.getElementById("list_button");
 const filesTbody = document.getElementById("files_tbody");
@@ -72,7 +73,15 @@ function gisLoaded() {
     
     fileInputFiles.onchange = (e) => { filesToUpload = Array.from(e.target.files); updateUploadInputStatus(); };
     fileInputFolder.onchange = (e) => { filesToUpload = Array.from(e.target.files); updateUploadInputStatus(); };
-    reloadTargetFoldersButton.onclick = () => { listTargetFolders(targetCurrentFolderId, targetFolderName); };
+    
+    // Nút tải lại Cột 2: Tải lại thư mục hiện tại trong targetFolderHistory
+    reloadTargetFoldersButton.onclick = () => { 
+        const current = targetFolderHistory[targetFolderHistory.length - 1];
+        listTargetFolders(current.id, current.name, false); 
+    };
+    
+    // NÚT MỚI: Xử lý quay lại từng bước cho Cột 2
+    goBackTargetFolderButton.onclick = navigateTargetHistoryBack; 
     
     goBackButton.onclick = () => { navigateHistory(folderHistory.length - 2); };
     listButton.onclick = () => { folderHistory = [{ id: 'root', name: 'Drive của tôi' }]; listFiles('root'); };
@@ -107,10 +116,11 @@ function handleAuthClick() {
         signoutButton.disabled = false;
         listButton.disabled = false;
         reloadTargetFoldersButton.disabled = false;
+        goBackTargetFolderButton.disabled = true; // Ban đầu là Drive của tôi
         
         updateUploadInputStatus();
         await listFiles(); 
-        await listTargetFolders(); 
+        await listTargetFolders('root', 'Drive của tôi', false); // Tải thư mục đích ban đầu
     };
     
     tokenClient.requestAccessToken({ prompt: "select_account" });
@@ -130,6 +140,9 @@ function handleSignoutClick() {
     authStatusBadge.className = "status-badge disconnected";
     authText.textContent = "Chưa kết nối";
     
+    // RESET LỊCH SỬ CỘT 2
+    targetFolderHistory = [{ id: 'root', name: 'Drive của tôi' }]; 
+    
     filesToUpload = [];
     filesTbody.innerHTML = '<tr><td colspan="5" class="placeholder-text">Vui lòng đăng nhập.</td></tr>';
     targetFolderList.innerHTML = '<div class="placeholder-text">Đăng nhập để xem...</div>';
@@ -140,45 +153,68 @@ function handleSignoutClick() {
 
 
 // --- CỘT 2: QUẢN LÝ THƯ MỤC ĐÍCH ---
-async function listTargetFolders(parentFolderId = 'root', parentFolderName = 'Drive của tôi') {
-    targetCurrentFolderId = parentFolderId;
-    targetFolderList.innerHTML = '<div class="placeholder-text">Đang tải...</div>';
+
+// HÀM QUAY LẠI TỪNG BƯỚC CHO CỘT 2
+function navigateTargetHistoryBack() {
+    if (targetFolderHistory.length <= 1) return;
     
-    targetFolderId = parentFolderId;
-    targetFolderName = parentFolderName;
+    // Lùi 1 bước trong lịch sử
+    const previousIndex = targetFolderHistory.length - 2;
+    const previousFolder = targetFolderHistory[previousIndex];
+    
+    // Cắt bớt lịch sử
+    targetFolderHistory = targetFolderHistory.slice(0, previousIndex + 1);
+    
+    // Tải lại thư mục trước đó (Không push lịch sử mới)
+    listTargetFolders(previousFolder.id, previousFolder.name, false); 
+}
+
+
+async function listTargetFolders(id, name, shouldPushHistory = true) {
+    
+    // 1. CẬP NHẬT LỊCH SỬ
+    let currentFolder;
+    if (shouldPushHistory) {
+        // Tránh trùng lặp nếu lỡ gọi lại thư mục cũ
+        if (id !== targetFolderHistory[targetFolderHistory.length - 1]?.id) {
+             targetFolderHistory.push({ id: id, name: name });
+        }
+    }
+    
+    currentFolder = targetFolderHistory[targetFolderHistory.length - 1];
+    
+    // Cập nhật biến global (cho Upload)
+    targetFolderId = currentFolder.id; 
+    targetFolderName = currentFolder.name;
+    
     updateTargetStatus();
     updateUploadInputStatus();
 
+    // Cập nhật trạng thái nút quay lại
+    goBackTargetFolderButton.disabled = targetFolderHistory.length <= 1;
+    
+    targetFolderList.innerHTML = '<div class="placeholder-text">Đang tải...</div>';
+    
     try {
         const response = await gapi.client.drive.files.list({
             pageSize: 100,
             fields: "files(id,name,mimeType)",
             orderBy: "name",
-            q: `mimeType = 'application/vnd.google-apps.folder' and '${parentFolderId}' in parents and trashed = false`,
+            q: `mimeType = 'application/vnd.google-apps.folder' and '${targetFolderId}' in parents and trashed = false`,
         });
 
         const folders = response.result.files || [];
         targetFolderList.innerHTML = "";
 
-        if (parentFolderId !== 'root') {
-             const backDiv = document.createElement('div');
-             backDiv.className = 'folder-item';
-             backDiv.innerHTML = '🔙 <strong>.. (Về Drive của tôi)</strong>';
-             backDiv.onclick = () => {
-                 listTargetFolders('root', 'Drive của tôi');
-             };
-             targetFolderList.appendChild(backDiv);
-        }
-
         if (folders.length > 0) {
             folders.forEach(folder => {
                 const div = document.createElement('div');
                 div.className = 'folder-item';
-                // Chỉ đánh dấu thư mục hiện tại đang được xem (chứ không phải targetId)
-                if(folder.id === targetCurrentFolderId) div.classList.add('active-target'); 
+                
                 div.innerHTML = `📁 ${folder.name}`;
                 div.onclick = () => {
-                    listTargetFolders(folder.id, folder.name);
+                    // Click vào thư mục con -> PUSH lịch sử
+                    listTargetFolders(folder.id, folder.name, true);
                 };
                 targetFolderList.appendChild(div);
             });
@@ -186,7 +222,7 @@ async function listTargetFolders(parentFolderId = 'root', parentFolderName = 'Dr
             targetFolderList.innerHTML += '<div class="placeholder-text">Thư mục trống</div>';
         }
         
-        // THÊM: Đảm bảo cuộn về đầu khi tải lại thư mục đích
+        // Cuộn về đầu để dễ nhìn
         targetFolderList.scrollTop = 0; 
         
     } catch (err) {
@@ -196,11 +232,13 @@ async function listTargetFolders(parentFolderId = 'root', parentFolderName = 'Dr
 }
 
 function updateTargetStatus() {
-    targetStatus.innerHTML = `Đích: <strong>/${targetFolderName}</strong>`;
+    // Chỉ hiển thị tên thư mục đích hiện tại
+    targetStatus.innerHTML = `Đích: <strong>/${targetFolderName}</strong>`; 
 }
 
 // --- CỘT 1: UPLOAD ---
 function updateUploadInputStatus() {
+// ... (giữ nguyên) ...
     const count = filesToUpload.length;
     if (count > 0) {
         uploadStatus.textContent = `Sẵn sàng: ${count} mục vào "${targetFolderName}"`;
@@ -215,6 +253,7 @@ function updateUploadInputStatus() {
 }
 
 async function createFolderIfNeeded(pathSegments, parentId) {
+// ... (giữ nguyên) ...
     let currentParentId = parentId;
     for (const segment of pathSegments) {
         const currentPath = currentParentId + '/' + segment;
@@ -238,6 +277,7 @@ async function createFolderIfNeeded(pathSegments, parentId) {
 }
 
 async function handleUploadClick() {
+// ... (giữ nguyên) ...
     const token = gapi.client.getToken();
     if (!token) return alert("Vui lòng đăng nhập!");
     
@@ -297,6 +337,7 @@ async function handleUploadClick() {
 
 // --- DANH SÁCH FILE (DƯỚI) ---
 async function listFiles(folderId) {
+// ... (giữ nguyên) ...
     currentFolderId = folderId || 'root';
     renderBreadcrumb();
     
@@ -347,6 +388,7 @@ async function listFiles(folderId) {
 }
 
 function renderBreadcrumb() {
+// ... (giữ nguyên) ...
     const path = folderHistory.map((f, i) => {
         if (i === folderHistory.length - 1) return `<strong>${f.name}</strong>`;
         return `<span style="cursor:pointer; color:#2563eb" onclick="navigateHistory(${i})">${f.name}</span>`;
@@ -356,6 +398,7 @@ function renderBreadcrumb() {
 }
 
 function navigateHistory(index) {
+// ... (giữ nguyên) ...
     if (index < 0) return;
     folderHistory = folderHistory.slice(0, index + 1);
     listFiles(folderHistory[folderHistory.length -1].id);
@@ -363,6 +406,7 @@ function navigateHistory(index) {
 
 // Helper format size
 function formatBytes(bytes) {
+// ... (giữ nguyên) ...
     if (!bytes || bytes == 0) return '0 B';
     const k = 1024; 
     const sizes = ['B', 'KB', 'MB', 'GB'];
@@ -372,6 +416,7 @@ function formatBytes(bytes) {
 
 // Helper format date: dd/mm/yy hh:mm
 function formatDateCustom(isoString) {
+// ... (giữ nguyên) ...
     if (!isoString) return '-';
     const date = new Date(isoString);
     
