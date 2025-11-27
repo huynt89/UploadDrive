@@ -1,3 +1,4 @@
+// TODO: THAY BẰNG THÔNG TIN THẬT CỦA BẠN
 const CLIENT_ID = "957298442128-v4c9rc83fud515f2is92p97lojjoiuja.apps.googleusercontent.com"; 
 const API_KEY = "AIzaSyCxJzJVa5OUlnPDKvyxiUqkIJGQ8-hxZtU"; 
 
@@ -8,7 +9,7 @@ const DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/drive/v3/res
 let tokenClient;
 let gapiInited = false;
 let gisInited = false;
-const folderIdCache = {}; 
+let folderIdCache = {}; // Thay const bằng let để có thể reset
 let filesToUpload = []; 
 
 // Biến cho upload
@@ -17,17 +18,16 @@ let targetFolderName = 'Drive của tôi';
 
 // Biến cho Cột 2 (Duyệt thư mục đích)
 let targetCurrentFolderId = 'root'; 
-let targetFolderHistory = [{ id: 'root', name: 'Drive của tôi' }]; 
 
 // Biến cho Cột Danh sách File (Phía dưới)
 let currentFolderId = 'root'; 
 let folderHistory = [{ id: 'root', name: 'Drive của tôi' }];
 
-// --- ELEMENTS ---
-const authorizeButton = document.getElementById("auth_status_badge");
-const authText = document.getElementById("auth_text");
+// --- ELEMENTS (ĐÃ ĐƯỢC CHỈNH SỬA ĐỂ KHỚP VỚI HTML MỚI) ---
+const authorizeButton = document.getElementById("authorize_button"); // ID của nút bấm thật sự
 const signoutButton = document.getElementById("signout_button");
-const authStatus = document.getElementById("auth_status");
+const authStatusBadge = document.getElementById("auth_status_badge"); // Badge container
+const authText = document.getElementById("auth_text"); // Text trong badge
 
 const uploadButton = document.getElementById("upload_button");
 const uploadStatus = document.getElementById("upload_status");
@@ -47,6 +47,7 @@ const filesTbody = document.getElementById("files_tbody");
 const goBackButton = document.getElementById("go_back_button");
 const breadcrumbPath = document.getElementById("breadcrumb_path");
 
+
 // --- KHỞI TẠO ---
 function gapiLoaded() { gapi.load("client", initializeGapiClient); }
 async function initializeGapiClient() {
@@ -56,7 +57,7 @@ async function initializeGapiClient() {
         maybeEnableAuthButton();
     } catch (error) {
         console.error(error);
-        authStatus.textContent = "Lỗi API: " + error.message;
+        if(authText) authText.textContent = "Lỗi API: " + error.message;
     }
 }
 
@@ -66,6 +67,10 @@ function gisLoaded() {
     });
     gisInited = true;
     
+    // GÁN SỰ KIỆN CLICK SAU KHI tokenClient ĐÃ SẴN SÀNG
+    if(authorizeButton) authorizeButton.onclick = handleAuthClick;
+    if(signoutButton) signoutButton.onclick = handleSignoutClick;
+    
     fileInputFiles.onchange = (e) => { filesToUpload = Array.from(e.target.files); updateUploadInputStatus(); };
     fileInputFolder.onchange = (e) => { filesToUpload = Array.from(e.target.files); updateUploadInputStatus(); };
     reloadTargetFoldersButton.onclick = () => { listTargetFolders(targetCurrentFolderId, targetFolderName); };
@@ -73,24 +78,28 @@ function gisLoaded() {
     // Nút quay lại cho file list chính
     goBackButton.onclick = () => { navigateHistory(folderHistory.length - 2); };
     listButton.onclick = () => { folderHistory = [{ id: 'root', name: 'Drive của tôi' }]; listFiles('root'); };
+    uploadButton.onclick = handleUploadClick;
 
     maybeEnableAuthButton();
 }
 
 function maybeEnableAuthButton() {
-    if (gapiInited && gisInited) {
+    if (gapiInited && gisInited && authorizeButton) {
         authorizeButton.disabled = false;
-        authStatus.textContent = "Sẵn sàng kết nối.";
+        if(authText) authText.textContent = "Sẵn sàng kết nối";
     }
 }
 
 // --- XỬ LÝ ĐĂNG NHẬP ---
-authorizeButton.onclick = () => {
+function handleAuthClick() {
+    if (!tokenClient) return console.error("Token Client chưa sẵn sàng!");
+
     tokenClient.callback = async (resp) => {
         if (resp.error) {
             alert("Lỗi đăng nhập: " + resp.error);
             return;
         }
+        
         // UI Change: Đăng nhập thành công
         authorizeButton.style.display = "none";
         signoutButton.style.display = "inline-flex";
@@ -107,11 +116,13 @@ authorizeButton.onclick = () => {
         await listFiles(); 
         await listTargetFolders(); 
     };
+    
+    // Yêu cầu token
     tokenClient.requestAccessToken({ prompt: "select_account" });
-};
+}
 
 // --- XỬ LÝ ĐĂNG XUẤT ---
-signoutButton.onclick = () => {
+function handleSignoutClick() {
     const token = gapi.client.getToken();
     if (token) {
         google.accounts.oauth2.revoke(token.access_token);
@@ -125,14 +136,15 @@ signoutButton.onclick = () => {
     authStatusBadge.className = "status-badge disconnected";
     authText.textContent = "Chưa kết nối";
     
-    // Reset Data (Giữ nguyên phần này của bạn)
+    // Reset Data
     filesToUpload = [];
     filesTbody.innerHTML = '<tr><td colspan="5" class="placeholder-text">Vui lòng đăng nhập.</td></tr>';
     targetFolderList.innerHTML = '<div class="placeholder-text">Đăng nhập để xem...</div>';
     targetFolderId = 'root';
     targetFolderName = 'Drive của tôi';
     updateUploadInputStatus();
-};
+}
+
 
 // --- CỘT 2: QUẢN LÝ THƯ MỤC ĐÍCH ---
 async function listTargetFolders(parentFolderId = 'root', parentFolderName = 'Drive của tôi') {
@@ -156,16 +168,12 @@ async function listTargetFolders(parentFolderId = 'root', parentFolderName = 'Dr
         const folders = response.result.files || [];
         targetFolderList.innerHTML = "";
 
-        // Thêm nút "Lên thư mục cha" nếu không phải root
+        // Nút "Quay lại" (Về root cho đơn giản)
         if (parentFolderId !== 'root') {
-             // Để đơn giản, ta dùng nút Reload để về root hoặc xử lý history phức tạp hơn. 
-             // Ở đây ta làm đơn giản: Click vào folder con thì đi xuống. 
-             // Muốn quay lại, ta thêm 1 item đặc biệt
              const backDiv = document.createElement('div');
              backDiv.className = 'folder-item';
-             backDiv.innerHTML = '🔙 <strong>.. (Quay lại)</strong>';
+             backDiv.innerHTML = '🔙 <strong>.. (Về Drive của tôi)</strong>';
              backDiv.onclick = () => {
-                 // Logic quay lại đơn giản: Về root (hoặc implement stack nếu cần)
                  listTargetFolders('root', 'Drive của tôi');
              };
              targetFolderList.appendChild(backDiv);
@@ -175,10 +183,10 @@ async function listTargetFolders(parentFolderId = 'root', parentFolderName = 'Dr
             folders.forEach(folder => {
                 const div = document.createElement('div');
                 div.className = 'folder-item';
-                if(folder.id === targetFolderId) div.classList.add('active-target');
+                // Chỉ đánh dấu mục đang được chọn làm đích, không phải thư mục hiện tại đang xem
+                if(folder.id === targetFolderId) div.classList.add('active-target'); 
                 div.innerHTML = `📁 ${folder.name}`;
                 div.onclick = () => {
-                    // Click vào folder -> Đi sâu vào trong
                     listTargetFolders(folder.id, folder.name);
                 };
                 targetFolderList.appendChild(div);
@@ -236,7 +244,7 @@ async function createFolderIfNeeded(pathSegments, parentId) {
     return currentParentId;
 }
 
-uploadButton.onclick = async () => {
+async function handleUploadClick() {
     const token = gapi.client.getToken();
     if (!token) return alert("Vui lòng đăng nhập!");
     
@@ -362,6 +370,7 @@ function navigateHistory(index) {
     listFiles(folderHistory[folderHistory.length -1].id);
 }
 
+// Helper format size
 function formatBytes(bytes) {
     if (!bytes || bytes == 0) return '0 B';
     const k = 1024; 
@@ -376,8 +385,8 @@ function formatDateCustom(isoString) {
     const date = new Date(isoString);
     
     const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Tháng bắt đầu từ 0
-    const year = String(date.getFullYear()).slice(-2); // Lấy 2 số cuối của năm
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
 
