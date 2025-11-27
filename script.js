@@ -92,7 +92,7 @@ function gisLoaded() {
 		updateUploadInputStatus();
 	};
 	
-	reloadTargetFoldersButton.onclick = () => { listTargetFolders(); };
+	reloadTargetFoldersButton.onclick = () => { listTargetFolders(targetCurrentFolderId); };
 
 	 maybeEnableAuthButton();
 }
@@ -379,39 +379,36 @@ uploadButton.onclick = async () => {
 };
 
 // =========================================================
-// === HÀM LIỆT KÊ THƯ MỤC ĐÍCH (MỚI) ===
+// === HÀM LIỆT KÊ THƯ MỤC ĐÍCH (ĐÃ SỬA ĐỂ HỖ TRỢ DUYỆT) ===
 // =========================================================
 
-async function listTargetFolders() {
+async function listTargetFolders(parentFolderId = 'root') {
+	targetCurrentFolderId = parentFolderId;
 	targetFolderList.innerHTML = '<div style="text-align: center; color: #2563eb;">Đang tải danh sách thư mục...</div>';
 	reloadTargetFoldersButton.disabled = true;
+
+	// Cập nhật lịch sử duyệt và hiển thị đường dẫn + nút chọn
+	updateTargetHistory(parentFolderId);
+	renderTargetBreadcrumb(); 
 
 	try {
 		const response = await gapi.client.drive.files.list({
 			pageSize: 50, 
 			fields: "files(id,name,mimeType)",
 			orderBy: "name", 
-			// CHỈ LẤY CÁC FOLDER CẤP 1 CỦA 'root' (Drive của tôi)
-			q: `mimeType = 'application/vnd.google-apps.folder' and 'root' in parents and trashed = false`, 
+			// DÙNG targetCurrentFolderId LÀM PARENT ID ĐỂ DUYỆT
+			q: `mimeType = 'application/vnd.google-apps.folder' and '${targetCurrentFolderId}' in parents and trashed = false`, 
 		});
 
 		const folders = response.result.files || [];
-		targetFolderList.innerHTML = "";
 		
-		// Thêm thư mục gốc
-		const rootFolder = { id: 'root', name: 'Drive của tôi' };
-		renderFolderItem(rootFolder);
-
+		// Xóa nội dung danh sách cũ
+		targetFolderList.innerHTML = '';
+		
 		if (folders.length > 0) {
-			folders.forEach(renderFolderItem);
-		} else if (targetFolderId === 'root') {
-			targetFolderList.innerHTML += '<div style="text-align: center; color: #4b5563; margin-top: 10px;">Bạn chưa tạo thư mục nào ngoài thư mục gốc.</div>';
-		}
-		
-		// Đánh dấu thư mục hiện tại đang được chọn
-		const currentTargetFolder = document.querySelector(`#target_folder_list .folder-item[data-id="${targetFolderId}"]`);
-		if (currentTargetFolder) {
-			currentTargetFolder.classList.add('selected');
+			folders.forEach(renderTargetFolderItem);
+		} else {
+			targetFolderList.innerHTML = '<div style="text-align: center; color: #4b5563; margin-top: 10px;">Thư mục này trống.</div>';
 		}
 		
 	} catch (error) {
@@ -422,8 +419,8 @@ async function listTargetFolders() {
 	}
 }
 
-// Hàm render từng mục folder và xử lý click chọn
-function renderFolderItem(folder) {
+// Hàm render từng mục folder và xử lý click: CHUYỂN VÀO THƯ MỤC CON
+function renderTargetFolderItem(folder) {
 	const div = document.createElement('div');
 	div.className = 'folder-item';
 	div.setAttribute('data-id', folder.id);
@@ -431,29 +428,106 @@ function renderFolderItem(folder) {
 
 	div.innerHTML = `<span role="img" aria-label="thư mục">📁</span> ${folder.name}`;
 	
-	// LOGIC CHỈ CHỌN, KHÔNG ĐIỀU HƯỚNG
+	// LOGIC MỚI: BẤM VÀO SẼ CHUYỂN VÀO THƯ MỤC CON
 	div.onclick = () => {
-		// Xóa trạng thái selected cũ
-		document.querySelectorAll('#target_folder_list .folder-item').forEach(item => item.classList.remove('selected'));
-		
-		// Set trạng thái selected mới
-		div.classList.add('selected');
-		
-		// Cập nhật biến thư mục đích
-		targetFolderId = folder.id;
-		targetFolderName = folder.name;
-		
-		// Cập nhật trạng thái hiển thị
-		targetStatus.innerHTML = `Thư mục hiện tại: <strong>/${targetFolderName}</strong>`;
-		
-		// Cập nhật lại trạng thái upload
-		updateUploadInputStatus();
-
-		// Tự động cuộn đến mục đã chọn
-		div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+		// Gọi hàm listTargetFolders để duyệt thư mục con
+		listTargetFolders(folder.id);
 	};
 
 	targetFolderList.appendChild(div);
+}
+
+// Hàm cập nhật lịch sử duyệt thư mục đích
+function updateTargetHistory(newFolderId) {
+    const newFolder = { id: newFolderId, name: 'Thư mục con' }; // Tên tạm
+    
+    // 1. Tìm thông tin folder trong folderHistory của cột Duyệt Drive (nếu có)
+    const folderInfo = folderHistory.find(item => item.id === newFolderId);
+    if (newFolderId === 'root') {
+        newFolder.name = 'Drive của tôi';
+    } else if (folderInfo) {
+        newFolder.name = folderInfo.name;
+    } 
+    
+    // 2. Cập nhật targetFolderHistory
+    const existingIndex = targetFolderHistory.findIndex(item => item.id === newFolderId);
+
+    if (existingIndex !== -1) {
+        // Quay lại
+        targetFolderHistory = targetFolderHistory.slice(0, existingIndex + 1);
+    } else {
+        // Đi sâu vào
+        targetFolderHistory.push(newFolder);
+    }
+}
+
+// Hàm hiển thị đường dẫn và nút chọn cho cột Thư mục Đích
+function renderTargetBreadcrumb() {
+	const currentFolder = targetFolderHistory[targetFolderHistory.length - 1];
+    
+    let pathHtml = '';
+	
+	const pathArray = targetFolderHistory.map((item, index) => {
+		// Tạo link để click quay lại
+		if (index < targetFolderHistory.length - 1) {
+			return `<a href="javascript:void(0)" class="link" onclick="listTargetFolders('${item.id}')">${item.name}</a>`;
+		}
+		// Thư mục hiện tại (không link)
+		return `<strong>${item.name}</strong>`;
+	}).join(' / ');
+	
+	// Hiển thị đường dẫn
+	pathHtml = `<div style="font-size: 13px; color: #4b5563; margin-bottom: 5px;">${pathArray}</div>`;
+
+    // Hiển thị nút "Chọn thư mục này"
+    const selectButtonHtml = `
+        <button id="select_target_folder_btn" class="btn btn-primary" style="padding: 6px 10px; font-size: 14px; margin-top: 5px; width: 100%;">
+            ✅ Chọn thư mục: ${currentFolder.name}
+        </button>
+    `;
+
+    // Nút Quay lại (nếu không phải thư mục gốc)
+    const goBackBtnHtml = (targetFolderHistory.length > 1) ? `
+        <button id="target_go_back_btn" class="btn btn-outline" style="padding: 6px 10px; font-size: 14px; margin-top: 5px; margin-right: 5px;">
+            ⬅️ Quay lại
+        </button>
+    ` : '';
+
+    // Cập nhật thẻ targetStatus
+    targetStatus.innerHTML = pathHtml + 
+        `<div class="buttons-row" style="margin: 0; padding: 0;">` +
+        goBackBtnHtml + 
+        selectButtonHtml +
+        `</div>`;
+    
+    // Gắn sự kiện cho nút Quay lại
+    if (targetFolderHistory.length > 1) {
+        document.getElementById('target_go_back_btn').onclick = () => {
+            const previousFolder = targetFolderHistory[targetFolderHistory.length - 2];
+            listTargetFolders(previousFolder.id);
+        };
+    }
+
+    // Gắn sự kiện cho nút Chọn
+    document.getElementById('select_target_folder_btn').onclick = () => {
+        // Cập nhật biến thư mục đích chính
+        targetFolderId = currentFolder.id;
+        targetFolderName = currentFolder.name;
+        
+        // Cập nhật lại trạng thái upload
+        updateUploadInputStatus();
+        
+        // Cập nhật visual cho nút chọn (thông báo chọn thành công)
+        const btn = document.getElementById('select_target_folder_btn');
+        const originalText = btn.textContent;
+        btn.textContent = `✅ Đã chọn làm đích: ${targetFolderName}`;
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 1500);
+    };
+
+    // Đảm bảo trạng thái upload luôn phản ánh đích cuối cùng
+    updateUploadInputStatus();
 }
 
 // =========================================================
