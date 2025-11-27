@@ -12,35 +12,29 @@
     </header>
 
     <main>
-        <!-- BỐ CỤC LƯỚI: 3 CỘT (2/4 - 1/4 - 1/4) -->
         <div class="grid-container">
             
-            <!-- CỘT 1: CHỌN & UPLOAD (Chiếm 2 phần) -->
             <section class="card" id="col-upload">
                 <div class="card-header">
                     <h2>🚀 Chọn & Upload</h2>
                 </div>
                 <div class="card-body">
                     <div class="action-buttons">
-                        <!-- Nút Chọn File -->
                         <label for="file_input_files" class="btn btn-outline" title="Chọn các file lẻ">
                             📄 Chọn File
                         </label>
                         <input type="file" id="file_input_files" multiple style="display: none;">
 
-                        <!-- Nút Chọn Folder -->
                         <label for="file_input_folder" class="btn btn-outline" title="Chọn cả thư mục">
                             📁 Chọn Folder
                         </label>
                         <input type="file" id="file_input_folder" webkitdirectory style="display: none;">
 
-                        <!-- Nút Upload -->
                         <button id="upload_button" class="btn btn-primary" disabled>
                             ⬆️ Upload
                         </button>
                     </div>
 
-                    <!-- Trạng thái & Tiến trình -->
                     <div class="upload-info">
                         <div id="upload_status" class="status-text">Chưa chọn tệp nào.</div>
                         
@@ -54,24 +48,24 @@
                 </div>
             </section>
 
-            <!-- CỘT 2: THƯ MỤC ĐÍCH (Chiếm 1 phần) -->
             <section class="card" id="col-target">
                 <div class="card-header">
                     <h2>📍 Nơi lưu</h2>
-                    <button id="reload_target_folders" class="icon-btn" title="Tải lại danh sách" disabled>🔄</button>
+                    <div class="header-actions">
+                        <button id="go_back_target_folder" class="icon-btn" title="Quay lại thư mục trước" disabled>⬅️</button>
+                        <button id="reload_target_folders" class="icon-btn" title="Tải lại danh sách" disabled>🔄</button>
+                    </div>
                 </div>
                 <div class="card-body display-flex-col">
                     <div id="target_status" class="status-text-small">
                         Đích: <strong>/Drive của tôi</strong>
                     </div>
-                    <!-- Danh sách cuộn cố định chiều cao -->
                     <div id="target_folder_list">
                         <div class="placeholder-text">Đăng nhập để xem...</div>
                     </div>
                 </div>
             </section>
 
-            <!-- CỘT 3: ĐĂNG NHẬP (Chiếm 1 phần) -->
             <section class="card" id="col-login">
                 <div class="card-header">
                     <h2>🔑 Tài khoản</h2>
@@ -84,10 +78,10 @@
                     </div>
 
                     <div class="auth-buttons">
-                        <button id="authorize_button" class="btn btn-primary">
+                        <button id="authorize_button" class="btn btn-primary" disabled>
                             Đăng nhập
                         </button>
-                        <button id="signout_button" class="btn btn-outline" disabled style="display: none;">
+                        <button id="signout_button" class="btn btn-outline full-width" disabled style="display: none;">
                             Đăng xuất
                         </button>
                     </div>
@@ -95,7 +89,6 @@
             </section>
         </div>
 
-        <!-- PHẦN HIỂN THỊ FILE (Full width ở dưới) -->
         <section class="card" id="col-file-list">
             <div class="card-header flex-between">
                 <h2>💾 Danh sách File</h2>

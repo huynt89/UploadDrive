@@ -64,6 +64,13 @@ main {
     gap: 5px;
 }
 
+/* THÊM: Wrapper cho các icon hành động trong header (Cột 2) */
+.header-actions {
+    display: flex;
+    gap: 8px; /* Khoảng cách giữa các icon */
+    align-items: center;
+}
+
 .card-body {
     padding: 15px;
     flex-grow: 1; /* Lấp đầy chiều cao */
@@ -138,11 +145,8 @@ main {
     font-size: 13px;
 }
 .folder-item:hover { background: #f3f4f6; }
-.folder-item.active-target {
-    background: #dbeafe;
-    color: #1e40af;
-    font-weight: 600;
-}
+/* Đã bỏ class active-target vì đã có logic mới trong JS */
+
 
 /* === CỘT 3: TÀI KHOẢN (ĐÃ LÀM ĐẸP VÀ SỬA KÍCH THƯỚC NÚT) === */
 #col-login .card-body {
@@ -280,6 +284,11 @@ td {
 
 .icon-btn {
     background: none; border: none; cursor: pointer; font-size: 14px;
+    padding: 5px; /* Thêm padding để dễ bấm hơn */
+    border-radius: 4px;
+}
+.icon-btn:hover:not(:disabled) {
+    background: #e5e7eb;
 }
 .placeholder-text { color: #9ca3af; text-align: center; margin-top: 20px; font-style: italic; }
 .flex-between { display: flex; justify-content: space-between; align-items: center; }
