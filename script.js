@@ -1,3 +1,4 @@
+// TODO: THAY BẰNG THÔNG TIN THẬT CỦA BẠN
 const CLIENT_ID = "957298442128-v4c9rc83fud515f2is92p97lojjoiuja.apps.googleusercontent.com"; 
 const API_KEY = "AIzaSyCxJzJVa5OUlnPDKvyxiUqkIJGQ8-hxZtU"; 
 
@@ -66,7 +67,6 @@ function gisLoaded() {
     });
     gisInited = true;
     
-    // GÁN SỰ KIỆN CLICK SAU KHI tokenClient ĐÃ SẴN SÀNG (Sửa lỗi logic)
     if(authorizeButton) authorizeButton.onclick = handleAuthClick;
     if(signoutButton) signoutButton.onclick = handleSignoutClick;
     
@@ -98,11 +98,9 @@ function handleAuthClick() {
             return;
         }
         
-        // UI Change: Đăng nhập thành công
         authorizeButton.style.display = "none";
         signoutButton.style.display = "inline-flex";
         
-        // Cập nhật Badge xanh
         authStatusBadge.className = "status-badge connected";
         authText.textContent = "Đã kết nối";
         
@@ -125,15 +123,13 @@ function handleSignoutClick() {
         google.accounts.oauth2.revoke(token.access_token);
         gapi.client.setToken("");
     }
-    // Reset UI: Về trạng thái chưa đăng nhập
+    
     authorizeButton.style.display = "inline-flex";
     signoutButton.style.display = "none";
     
-    // Cập nhật Badge xám
     authStatusBadge.className = "status-badge disconnected";
     authText.textContent = "Chưa kết nối";
     
-    // Reset Data
     filesToUpload = [];
     filesTbody.innerHTML = '<tr><td colspan="5" class="placeholder-text">Vui lòng đăng nhập.</td></tr>';
     targetFolderList.innerHTML = '<div class="placeholder-text">Đăng nhập để xem...</div>';
@@ -178,7 +174,8 @@ async function listTargetFolders(parentFolderId = 'root', parentFolderName = 'Dr
             folders.forEach(folder => {
                 const div = document.createElement('div');
                 div.className = 'folder-item';
-                if(folder.id === targetFolderId) div.classList.add('active-target'); 
+                // Chỉ đánh dấu thư mục hiện tại đang được xem (chứ không phải targetId)
+                if(folder.id === targetCurrentFolderId) div.classList.add('active-target'); 
                 div.innerHTML = `📁 ${folder.name}`;
                 div.onclick = () => {
                     listTargetFolders(folder.id, folder.name);
@@ -188,6 +185,10 @@ async function listTargetFolders(parentFolderId = 'root', parentFolderName = 'Dr
         } else {
             targetFolderList.innerHTML += '<div class="placeholder-text">Thư mục trống</div>';
         }
+        
+        // THÊM: Đảm bảo cuộn về đầu khi tải lại thư mục đích
+        targetFolderList.scrollTop = 0; 
+        
     } catch (err) {
         console.error(err);
         targetFolderList.innerHTML = '<div class="placeholder-text" style="color:red">Lỗi tải danh sách</div>';
